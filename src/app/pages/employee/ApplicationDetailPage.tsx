@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { leaveService } from '../../services/leave.service';
 import { getUserById, getLeaveTypeById } from '../../services/mockData';
 import { formatDate, formatDaysDisplay } from '../../utils/leaveCalculations';
+import { getAppPath } from '../../utils/basePath';
 import type { LeaveApplication } from '../../types';
 import { ArrowLeft, Calendar, FileText, MapPin, Phone, CheckCircle2, XCircle, Clock, AlertCircle, User } from 'lucide-react';
 
@@ -21,7 +22,7 @@ export function ApplicationDetailPage() {
   const loadApplication = async () => {
     try {
       // Extract application ID from URL
-      const pathParts = window.location.pathname.split('/');
+      const pathParts = getAppPath(window.location.pathname).split('/');
       const applicationId = pathParts[pathParts.length - 1];
 
       const app = await leaveService.getApplicationById(applicationId);

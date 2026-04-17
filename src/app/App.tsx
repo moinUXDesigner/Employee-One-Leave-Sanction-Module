@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardRouter } from './pages/DashboardRouter';
@@ -23,16 +23,26 @@ import { AccountsQueue } from './pages/accounts/AccountsQueue';
 import { AccountsDetail } from './pages/accounts/AccountsDetail';
 import { Toaster } from './components/ui/sonner';
 import { Sidebar } from './components/Sidebar';
+import { getAppPath, getBrowserPath } from './utils/basePath';
 
 // Simple client-side router for Figma Make environment
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [currentPath, setCurrentPath] = useState('/');
+  const [currentPath, setCurrentPath] = useState(() => getAppPath(window.location.pathname));
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(getAppPath(window.location.pathname));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Simple navigation function
   const navigate = (path: string) => {
     setCurrentPath(path);
-    window.history.pushState({}, '', path);
+    window.history.pushState({}, '', getBrowserPath(path));
   };
 
   // Make navigate available globally

@@ -11,6 +11,7 @@ import { getApplicationsByStatus, getUserById, getLeaveTypeById, getLeaveBalance
 import { formatDate } from '../utils/leaveCalculations';
 import { autoGenerationService } from '../services/autogeneration.service';
 import type { LeaveApplication } from '../types';
+import { getAppPath } from '../utils/basePath';
 
 // Placeholder dashboards for other roles
 function ControllingOfficerDashboard() {
@@ -845,7 +846,7 @@ function AdminDashboardMain() {
 
 export function DashboardRouter() {
   const { role } = useAuth();
-  const currentPath = window.location.pathname;
+  const currentPath = getAppPath(window.location.pathname);
 
   // Employee Dashboard - shown for /dashboard route
   if (currentPath === '/dashboard') {
