@@ -277,15 +277,15 @@ export function Step6Review({ formData, onBack, leaveType }: Step6Props) {
       </Card>
 
       {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={onBack} disabled={isSubmitting}>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg flex justify-between gap-3 z-50">
+        <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="flex-1 sm:flex-none">
           Back
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={!agreed || isSubmitting}
           size="lg"
-          className="min-w-40"
+          className="flex-1 sm:flex-none min-w-40"
         >
           {isSubmitting ? (
             <>

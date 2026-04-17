@@ -170,14 +170,15 @@ export function Step3Grounds({
       </Card>
 
       {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={onBack}>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg flex justify-between gap-3 z-50">
+        <Button variant="outline" onClick={onBack} className="flex-1 sm:flex-none">
           Back
         </Button>
         <Button
           onClick={onNext}
           disabled={!canProceed}
           size="lg"
+          className="flex-1 sm:flex-none"
         >
           Next: Upload Documents
         </Button>

@@ -272,8 +272,7 @@ export function SanctionInbox() {
                 <p className="text-sm text-muted-foreground">
                   Applications shown here have been verified by HR and are awaiting your final
                   sanction. Review the auto-generated draft order, make edits if needed, and approve
-                  or reject the application. All sanctioned applications will be forwarded to
-                  Accounts for SAP posting.
+                  or reject the application. All sanctioned applications will be posted to SAP automatically.
                 </p>
               </div>
             </div>

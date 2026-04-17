@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useAuth } from '../context/AuthContext';
 import { Building2, LogIn } from 'lucide-react';
+import logoImage from '../../imports/logo-multi-color-1.png';
 
 export function LoginPage() {
   const [username, setUsername] = useState('');
@@ -58,9 +59,7 @@ export function LoginPage() {
         {/* Logo and Title */}
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
-              <Building2 className="w-10 h-10 text-primary-foreground" />
-            </div>
+            <img src={logoImage} alt="APTRANSCO" className="h-20 w-auto" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">APTRANSCO</h1>
           <p className="text-muted-foreground">Leave Sanction Module</p>

@@ -118,7 +118,7 @@ export function Step4Documents({
         </CardHeader>
         <CardContent className="space-y-4">
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
               dragActive
                 ? 'border-primary bg-primary/5'
                 : 'border-muted-foreground/25 hover:border-primary/50'
@@ -128,12 +128,12 @@ export function Step4Documents({
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <div className="space-y-2">
-              <p className="text-lg font-medium">
+            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
                 Drop files here or click to upload
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 PDF, JPG, PNG up to 10MB each
               </p>
             </div>
@@ -147,7 +147,8 @@ export function Step4Documents({
             />
             <Button
               variant="outline"
-              className="mt-4"
+              size="sm"
+              className="mt-3"
               onClick={() => document.getElementById('file-upload')?.click()}
             >
               Browse Files
@@ -219,14 +220,15 @@ export function Step4Documents({
       )}
 
       {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={onBack}>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg flex justify-between gap-3 z-50">
+        <Button variant="outline" onClick={onBack} className="flex-1 sm:flex-none">
           Back
         </Button>
         <Button
           onClick={onNext}
           disabled={!canProceed}
           size="lg"
+          className="flex-1 sm:flex-none"
         >
           Next: Check Eligibility
         </Button>

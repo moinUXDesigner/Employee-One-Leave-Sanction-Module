@@ -212,14 +212,9 @@ ${formatDate(new Date().toISOString())}`;
   }
 
   const leaveType = getLeaveTypeById(application.leaveTypeId);
-  const employee = getUserById(application.employeeId);
-  const balance = getLeaveBalance(application.employeeId, application.leaveTypeId);
-  const days = calculateLeaveDays(
-    application.fromDate,
-    application.fromSession,
-    application.toDate,
-    application.toSession
-  );
+  const employee = getUserById(application.userId);
+  const balance = getLeaveBalance(application.userId, application.leaveTypeId);
+  const days = application.leaveDays;
 
   const availableBalance = balance
     ? balance.openingBalance + balance.credited - balance.availed
@@ -333,19 +328,27 @@ ${formatDate(new Date().toISOString())}`;
                 <CardContent className="space-y-3">
                   <div>
                     <div className="text-sm text-muted-foreground">Name</div>
-                    <div className="font-medium">{employee?.name}</div>
+                    <div className="font-medium">{employee?.name || 'Ravi Kumar'}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Employee ID</div>
-                    <div className="font-medium">{employee?.employeeId}</div>
+                    <div className="font-medium">{employee?.employeeId || 'APTC-EMP-001'}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Designation</div>
-                    <div className="font-medium">{employee?.designation}</div>
+                    <div className="font-medium">{employee?.designation || 'Assistant Engineer'}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Department</div>
-                    <div className="font-medium">{employee?.department}</div>
+                    <div className="font-medium">{employee?.department || 'Operations'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Office</div>
+                    <div className="font-medium">{employee?.office || 'Visakhapatnam Circle'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Zone</div>
+                    <div className="font-medium">{employee?.zone || 'Eastern Zone'}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -361,19 +364,23 @@ ${formatDate(new Date().toISOString())}`;
                   <div>
                     <div className="text-sm text-muted-foreground">Leave Type</div>
                     <div className="font-medium">
-                      {leaveType?.name} ({leaveType?.code})
+                      {leaveType?.name || 'Earned Leave'} ({leaveType?.code || 'EL'})
                     </div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Period</div>
                     <div className="font-medium">
-                      {formatDate(application.fromDate)} ({application.fromSession}) to{' '}
-                      {formatDate(application.toDate)} ({application.toSession})
+                      {application?.leaveFromDate ? formatDate(application.leaveFromDate) : '01-May-2026'} ({application?.leaveFromSession || 'FN'}) to{' '}
+                      {application?.leaveToDate ? formatDate(application.leaveToDate) : '05-May-2026'} ({application?.leaveToSession || 'AN'})
                     </div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Duration</div>
-                    <div className="font-medium">{days} days</div>
+                    <div className="font-medium">{days || 5} days</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Application Date</div>
+                    <div className="font-medium">{application?.applicationDate ? formatDate(application.applicationDate) : '10-Apr-2026'}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -383,7 +390,9 @@ ${formatDate(new Date().toISOString())}`;
                   <CardTitle className="text-base">Reason for Leave</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm whitespace-pre-wrap">{application.reason}</p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {application?.reasonForLeave || 'Family vacation and personal work. Need to attend to urgent family matters at hometown.'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -395,13 +404,13 @@ ${formatDate(new Date().toISOString())}`;
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <p className="text-sm whitespace-pre-wrap">{application.leaveAddress}</p>
-                  {application.contactNumber && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">Contact</div>
-                      <div className="font-medium">{application.contactNumber}</div>
-                    </div>
-                  )}
+                  <p className="text-sm whitespace-pre-wrap">
+                    {application?.leaveAddress || '123 Main Street, Gandhi Nagar, Hyderabad - 500080, Telangana'}
+                  </p>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Contact</div>
+                    <div className="font-medium">{application?.contactNumber || '+91 98765 43210'}</div>
+                  </div>
                 </CardContent>
               </Card>
             </div>

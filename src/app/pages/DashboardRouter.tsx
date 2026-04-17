@@ -5,9 +5,11 @@ import { EmployeeDashboard } from './employee/EmployeeDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { FileText, Users, CheckSquare, DollarSign, Settings, LogOut, Calendar, ArrowRight } from 'lucide-react';
-import { getApplicationsByStatus, getUserById, getLeaveTypeById } from '../services/mockData';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { FileText, Users, CheckSquare, DollarSign, Settings, LogOut, Calendar, ArrowRight, Download, Eye } from 'lucide-react';
+import { getApplicationsByStatus, getUserById, getLeaveTypeById, getLeaveBalance } from '../services/mockData';
 import { formatDate } from '../utils/leaveCalculations';
+import { autoGenerationService } from '../services/autogeneration.service';
 import type { LeaveApplication } from '../types';
 
 // Placeholder dashboards for other roles
@@ -461,12 +463,122 @@ function AccountsDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [applications, setApplications] = useState<LeaveApplication[]>([]);
+  const [selectedApp, setSelectedApp] = useState<LeaveApplication | null>(null);
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  const [sanctionOrder, setSanctionOrder] = useState<string>('');
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
 
   useEffect(() => {
     // Load sanctioned applications that need SAP posting
     const sanctioned = getApplicationsByStatus('Sanctioned');
     setApplications(sanctioned.slice(0, 3)); // Show max 3
   }, []);
+
+  const handleViewOrder = async (e: React.MouseEvent, app: LeaveApplication) => {
+    e.stopPropagation();
+    setSelectedApp(app);
+    setIsOrderDialogOpen(true);
+    setIsLoadingOrder(true);
+
+    try {
+      const employee = getUserById(app.userId);
+      const leaveType = getLeaveTypeById(app.leaveTypeId);
+      let balance = getLeaveBalance(app.userId, app.leaveTypeId);
+
+      if (!employee || !leaveType) {
+        setSanctionOrder('Error: Unable to load order details - Employee or Leave Type not found');
+        setIsLoadingOrder(false);
+        return;
+      }
+
+      // If balance doesn't exist, create a mock balance based on application data
+      if (!balance) {
+        balance = {
+          balanceId: `temp-${app.applicationId}`,
+          userId: app.userId,
+          leaveTypeId: app.leaveTypeId,
+          year: new Date().getFullYear(),
+          openingBalance: app.balanceAtApplication || 30,
+          credits: 30,
+          totalAvailable: app.balanceAtApplication || 60,
+          availed: 0,
+          pending: 0,
+          balance: app.balanceAfterAvailing || app.balanceAtApplication || 30,
+          spellsAvailed: 0,
+          spellsPending: 0,
+          spellsBalance: 10,
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+
+      const controllingOfficer = employee.controllingOfficer
+        ? getUserById(employee.controllingOfficer)
+        : undefined;
+
+      const regulations = await autoGenerationService.selectApplicableRegulations(app.leaveTypeId);
+
+      const order = await autoGenerationService.generateDraftSanctionOrder({
+        application: app,
+        user: employee,
+        leaveType,
+        balance,
+        regulations,
+        controllingOfficer,
+      });
+
+      setSanctionOrder(order);
+    } catch (error) {
+      setSanctionOrder(`Error: Failed to generate sanction order\n\n${error instanceof Error ? error.message : String(error)}`);
+      console.error('Order generation error:', error);
+    } finally {
+      setIsLoadingOrder(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!sanctionOrder || !selectedApp) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to download PDF');
+      return;
+    }
+
+    const employee = getUserById(selectedApp.userId);
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Sanction Order - ${selectedApp.applicationId}</title>
+          <style>
+            body {
+              font-family: 'Times New Roman', serif;
+              line-height: 1.6;
+              padding: 40px;
+              max-width: 210mm;
+              margin: 0 auto;
+            }
+            h1 { text-align: center; margin-bottom: 20px; }
+            pre {
+              white-space: pre-wrap;
+              font-family: 'Times New Roman', serif;
+              font-size: 12pt;
+            }
+            @media print {
+              body { padding: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <pre>${sanctionOrder}</pre>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -491,31 +603,31 @@ function AccountsDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
-              <CardDescription>Orders Received</CardDescription>
+              <CardDescription>Total Orders</CardDescription>
               <CardTitle className="text-3xl">45</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">This month</p>
+              <p className="text-sm text-muted-foreground">All sanctioned</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardDescription>SAP Posted</CardDescription>
-              <CardTitle className="text-3xl text-green-600">42</CardTitle>
+              <CardDescription>This Month</CardDescription>
+              <CardTitle className="text-3xl text-primary">28</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Successfully processed</p>
+              <p className="text-sm text-muted-foreground">Current period</p>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/accounts/queue')}>
             <CardHeader>
-              <CardDescription>Pending Processing</CardDescription>
-              <CardTitle className="text-3xl">3</CardTitle>
+              <CardDescription>View All Orders</CardDescription>
+              <CardTitle className="text-3xl text-green-600">→</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Awaiting action</p>
+              <p className="text-sm text-muted-foreground">Click to view details</p>
             </CardContent>
           </Card>
         </div>
@@ -524,8 +636,8 @@ function AccountsDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>SAP Posting Queue</CardTitle>
-                <CardDescription>Sanctioned orders ready for SAP processing</CardDescription>
+                <CardTitle>Sanctioned Leave Orders</CardTitle>
+                <CardDescription>View sanctioned orders from all HR wings</CardDescription>
               </div>
               <Button onClick={() => navigate('/accounts/queue')}>
                 View All
@@ -580,12 +692,10 @@ function AccountsDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/accounts/detail/${app.applicationId}`);
-                          }}
+                          onClick={(e) => handleViewOrder(e, app)}
                         >
-                          Post to SAP
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Order
                         </Button>
                       </div>
                     </div>
@@ -596,6 +706,41 @@ function AccountsDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sanction Order Dialog */}
+      <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
+        <DialogContent className="w-[75vw] max-w-[75vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Sanction Order</DialogTitle>
+            <DialogDescription>
+              Application ID: {selectedApp?.applicationId}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {isLoadingOrder ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin mb-4">⏳</div>
+                  <p className="text-muted-foreground">Generating sanction order...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-6">
+                <pre className="whitespace-pre-wrap font-mono text-sm">{sanctionOrder}</pre>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOrderDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={handleDownloadPDF} disabled={isLoadingOrder}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -700,7 +845,31 @@ function AdminDashboardMain() {
 
 export function DashboardRouter() {
   const { role } = useAuth();
+  const currentPath = window.location.pathname;
 
+  // Employee Dashboard - shown for /dashboard route
+  if (currentPath === '/dashboard') {
+    return <EmployeeDashboard />;
+  }
+
+  // Role-specific Approval Dashboards - shown for role-specific routes
+  if (currentPath === '/co/dashboard' && role === 'ControllingOfficer') {
+    return <ControllingOfficerDashboard />;
+  }
+  if (currentPath === '/hr/dashboard' && role === 'HR') {
+    return <HRDashboard />;
+  }
+  if (currentPath === '/sa/dashboard' && role === 'SanctionAuthority') {
+    return <SanctionAuthorityDashboard />;
+  }
+  if (currentPath === '/accounts/dashboard' && role === 'Accounts') {
+    return <AccountsDashboard />;
+  }
+  if (currentPath === '/admin/dashboard' && role === 'Admin') {
+    return <AdminDashboardMain />;
+  }
+
+  // Default fallback based on role
   switch (role) {
     case 'Employee':
       return <EmployeeDashboard />;

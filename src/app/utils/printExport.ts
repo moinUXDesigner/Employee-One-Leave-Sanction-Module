@@ -7,12 +7,7 @@ export function printApplication(
   leaveType: LeaveType,
   balance?: LeaveBalance
 ) {
-  const days = calculateLeaveDays(
-    application.fromDate,
-    application.fromSession,
-    application.toDate,
-    application.toSession
-  );
+  const days = application.leaveDays;
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -124,7 +119,7 @@ export function printApplication(
         </div>
         <div class="row">
           <div class="label">Application Date:</div>
-          <div class="value">${formatDate(application.submittedDate || new Date().toISOString())}</div>
+          <div class="value">${formatDate(application.applicationDate || new Date().toISOString())}</div>
         </div>
         <div class="row">
           <div class="label">Status:</div>
@@ -164,11 +159,11 @@ export function printApplication(
         </div>
         <div class="row">
           <div class="label">From:</div>
-          <div class="value">${formatDate(application.fromDate)} (${application.fromSession === 'FN' ? 'Forenoon' : 'Afternoon'})</div>
+          <div class="value">${formatDate(application.leaveFromDate)} (${application.leaveFromSession === 'FN' ? 'Forenoon' : 'Afternoon'})</div>
         </div>
         <div class="row">
           <div class="label">To:</div>
-          <div class="value">${formatDate(application.toDate)} (${application.toSession === 'FN' ? 'Forenoon' : 'Afternoon'})</div>
+          <div class="value">${formatDate(application.leaveToDate)} (${application.leaveToSession === 'FN' ? 'Forenoon' : 'Afternoon'})</div>
         </div>
         <div class="row">
           <div class="label">Duration:</div>

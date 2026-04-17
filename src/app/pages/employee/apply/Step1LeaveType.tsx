@@ -108,202 +108,159 @@ export function Step1LeaveType({ selectedLeaveType, onLeaveTypeSelect, onNext }:
 
       {/* Eligible Leave Types */}
       <div>
-        <h3 className="text-lg font-medium mb-3 flex items-center">
-          <CheckCircle2 className="w-5 h-5 text-green-600 mr-2" />
-          Available Leave Types
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {eligibleTypes.map((leaveType) => {
+        <div className="space-y-2 -mx-4 sm:mx-0">
+          {eligibleTypes.map((leaveType, index) => {
             const balance = balances[leaveType.leaveTypeId];
             const isSelected = selectedLeaveType === leaveType.leaveTypeId;
 
             return (
-              <Card
+              <div
                 key={leaveType.leaveTypeId}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
-                }`}
-                onClick={() => onLeaveTypeSelect(leaveType.leaveTypeId)}
+                className={`
+                  relative overflow-hidden transition-all active:scale-[0.98]
+                  ${isSelected ? 'bg-primary/5' : 'bg-background hover:bg-muted/50'}
+                  ${index > 0 ? 'border-t' : ''}
+                `}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {leaveType.name}
+                <div
+                  className={`
+                    py-3 px-4 cursor-pointer select-none 
+                    ${isSelected ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'}
+                  `}
+                  onClick={() => onLeaveTypeSelect(leaveType.leaveTypeId)}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-sm leading-tight">
+                          {leaveType.name}
+                        </h3>
                         {isSelected && (
-                          <CheckCircle2 className="w-5 h-5 text-primary" />
-                        )}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {leaveType.code}
-                      </CardDescription>
-                    </div>
-                    {getPayTypeBadge(leaveType.payType)}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    {leaveType.description}
-                  </p>
-
-                  {balance && (
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <span className="text-sm text-muted-foreground">Available Balance</span>
-                      <span className="text-lg font-bold text-primary">
-                        {balance.balance} days
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Max per spell</span>
-                    <span className="font-medium">
-                      {leaveType.maxDaysPerSpell || 'Unlimited'} days
-                    </span>
-                  </div>
-
-                  {leaveType.minDaysNotice > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
-                      {leaveType.minDaysNotice} days advance notice required
-                    </div>
-                  )}
-
-                  <Drawer>
-                    <DrawerTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full">
-                        <Info className="w-4 h-4 mr-2" />
-                        View Details
-                      </Button>
-                    </DrawerTrigger>
-                    <DrawerContent>
-                      <DrawerHeader>
-                        <DrawerTitle>{leaveType.name}</DrawerTitle>
-                        <DrawerDescription>{leaveType.description}</DrawerDescription>
-                      </DrawerHeader>
-                      <div className="p-4 space-y-4">
-                        <div>
-                          <h4 className="font-medium mb-2">Leave Details</h4>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Pay Type</span>
-                              <span>{leaveType.payType.replace('Pay', ' Pay')}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Max Days Per Spell</span>
-                              <span>{leaveType.maxDaysPerSpell || 'Unlimited'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Max Days Per Year</span>
-                              <span>{leaveType.maxDaysPerYear || 'Unlimited'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Advance Notice</span>
-                              <span>{leaveType.minDaysNotice} days</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {leaveType.requiredDocuments.length > 0 && (
-                          <div>
-                            <h4 className="font-medium mb-2">Required Documents</h4>
-                            <ul className="list-disc list-inside text-sm space-y-1">
-                              {leaveType.requiredDocuments.map((doc, idx) => (
-                                <li key={idx} className="text-muted-foreground">{doc}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {leaveType.applicableRegulations.length > 0 && (
-                          <div>
-                            <h4 className="font-medium mb-2">Applicable Regulations</h4>
-                            <div className="flex gap-2 flex-wrap">
-                              {leaveType.applicableRegulations.map((reg, idx) => (
-                                <Badge key={idx} variant="outline">{reg}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {balance && (
-                          <div>
-                            <h4 className="font-medium mb-2">Your Balance ({balance.year})</h4>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div className="p-2 bg-muted rounded">
-                                <div className="text-muted-foreground">Opening</div>
-                                <div className="font-medium">{balance.openingBalance}</div>
-                              </div>
-                              <div className="p-2 bg-muted rounded">
-                                <div className="text-muted-foreground">Credits</div>
-                                <div className="font-medium">{balance.credits}</div>
-                              </div>
-                              <div className="p-2 bg-muted rounded">
-                                <div className="text-muted-foreground">Availed</div>
-                                <div className="font-medium">{balance.availed}</div>
-                              </div>
-                              <div className="p-2 bg-primary/10 rounded">
-                                <div className="text-muted-foreground">Balance</div>
-                                <div className="font-bold text-primary">{balance.balance}</div>
-                              </div>
-                            </div>
-                          </div>
+                          <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                         )}
                       </div>
-                    </DrawerContent>
-                  </Drawer>
-                </CardContent>
-              </Card>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                        <span>{leaveType.code}</span>
+                        <span>•</span>
+                        <span>Max {leaveType.maxDaysPerSpell || '∞'}/spell</span>
+                        {leaveType.minDaysNotice > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>{leaveType.minDaysNotice}d notice</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {balance && (
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xl font-bold text-primary leading-none">
+                          {balance.balance}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">days</div>
+                      </div>
+                    )}
+                    <Drawer>
+                      <DrawerTrigger asChild>
+                        <button
+                          className="p-1.5 text-muted-foreground hover:text-primary active:scale-95 transition-all"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Info className="w-4 h-4" />
+                        </button>
+                      </DrawerTrigger>
+                      <DrawerContent>
+                        <DrawerHeader>
+                          <DrawerTitle>{leaveType.name}</DrawerTitle>
+                          <DrawerDescription>{leaveType.description}</DrawerDescription>
+                        </DrawerHeader>
+                        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                          <div>
+                            <h4 className="font-medium mb-2">Leave Details</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Pay Type</span>
+                                <span>{leaveType.payType.replace('Pay', ' Pay')}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Max Days Per Spell</span>
+                                <span>{leaveType.maxDaysPerSpell || 'Unlimited'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Max Days Per Year</span>
+                                <span>{leaveType.maxDaysPerYear || 'Unlimited'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Advance Notice</span>
+                                <span>{leaveType.minDaysNotice} days</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {leaveType.requiredDocuments.length > 0 && (
+                            <div>
+                              <h4 className="font-medium mb-2">Required Documents</h4>
+                              <ul className="list-disc list-inside text-sm space-y-1">
+                                {leaveType.requiredDocuments.map((doc, idx) => (
+                                  <li key={idx} className="text-muted-foreground">{doc}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {leaveType.applicableRegulations.length > 0 && (
+                            <div>
+                              <h4 className="font-medium mb-2">Applicable Regulations</h4>
+                              <div className="flex gap-2 flex-wrap">
+                                {leaveType.applicableRegulations.map((reg, idx) => (
+                                  <Badge key={idx} variant="outline">{reg}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {balance && (
+                            <div>
+                              <h4 className="font-medium mb-2">Your Balance ({balance.year})</h4>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-muted-foreground">Opening</div>
+                                  <div className="font-medium">{balance.openingBalance}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-muted-foreground">Credits</div>
+                                  <div className="font-medium">{balance.credits}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-muted-foreground">Availed</div>
+                                  <div className="font-medium">{balance.availed}</div>
+                                </div>
+                                <div className="p-2 bg-primary/10 rounded">
+                                  <div className="text-muted-foreground">Balance</div>
+                                  <div className="font-bold text-primary">{balance.balance}</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </DrawerContent>
+                    </Drawer>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Ineligible Leave Types */}
-      {ineligibleTypes.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3 flex items-center text-muted-foreground">
-            <XCircle className="w-5 h-5 mr-2" />
-            Not Available
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {ineligibleTypes.map((leaveType) => (
-              <Card key={leaveType.leaveTypeId} className="opacity-60">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg text-muted-foreground">
-                        {leaveType.name}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {leaveType.code}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="outline" className="text-muted-foreground">
-                      Not Eligible
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="text-sm">
-                      {getIneligibilityReason(leaveType)}
-                    </AlertDescription>
-                  </Alert>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Ineligible Leave Types - Hidden */}
 
       {/* Next Button */}
-      <div className="flex justify-end pt-4">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg flex justify-end z-50">
         <Button
           onClick={onNext}
           disabled={!selectedLeaveType}
           size="lg"
+          className="flex-1 sm:flex-none"
         >
           Next: Enter Dates
         </Button>

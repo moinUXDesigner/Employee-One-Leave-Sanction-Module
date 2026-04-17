@@ -217,66 +217,75 @@ export function MyApplicationsPage() {
             {filteredApps.map((application) => (
               <Card
                 key={application.applicationId}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/employee/applications/${application.applicationId}`)}
+                className="hover:shadow-md transition-shadow"
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
                         {getStatusIcon(application.status)}
-                        <CardTitle className="text-lg">
-                          Application #{application.applicationId.slice(-8).toUpperCase()}
+                        <CardTitle className="text-base truncate">
+                          #{application.applicationId.slice(-8).toUpperCase()}
                         </CardTitle>
+                        {getStatusBadge(application.status)}
                       </div>
-                      <CardDescription>
-                        Applied on {formatDate(application.applicationDate)}
+                      <CardDescription className="text-xs">
+                        {formatDate(application.applicationDate)} • {formatDate(application.leaveFromDate)} - {formatDate(application.leaveToDate)} • {formatDaysDisplay(application.totalDays)}
                       </CardDescription>
                     </div>
-                    {getStatusBadge(application.status)}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm text-muted-foreground">Leave Period</div>
-                        <div className="font-medium">
-                          {formatDate(application.leaveFromDate)} - {formatDate(application.leaveToDate)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm text-muted-foreground">Duration</div>
-                        <div className="font-medium">
-                          {formatDaysDisplay(application.totalDays)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm text-muted-foreground">Current Stage</div>
-                        <div className="font-medium">{application.currentStage}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">Reason</div>
-                    <div className="text-sm line-clamp-2">{application.reasonForLeave}</div>
-                  </div>
-
-                  {application.status === 'ReturnedForCorrection' && (
-                    <div className="mt-3">
-                      <Badge variant="destructive" className="text-xs">
-                        Action Required: Please correct and resubmit
+                <CardContent className="space-y-3">
+                  {/* Current Stage Label */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Current: <span className="font-medium text-foreground">{application.currentStage}</span></span>
+                    {application.status === 'ReturnedForCorrection' && (
+                      <Badge variant="destructive" className="text-xs h-5">
+                        Action Required
                       </Badge>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  {/* Reason - Compact */}
+                  <div className="text-xs text-muted-foreground line-clamp-1">
+                    {application.reasonForLeave}
+                  </div>
+
+                  {/* Application Timeline */}
+                  <div className="flex items-center gap-1">
+                    {['Employee', 'ControllingOfficer', 'HR', 'SanctionAuthority', 'Completed'].map((stage, index) => {
+                      const stages = ['Employee', 'ControllingOfficer', 'HR', 'SanctionAuthority', 'Accounts', 'RejoiningAcceptance', 'Completed'];
+                      const currentIndex = stages.indexOf(application.currentStage);
+                      const stageIndex = stages.indexOf(stage);
+                      const isCompleted = stageIndex < currentIndex || application.status === 'Sanctioned' || application.status === 'Closed';
+                      const isCurrent = stage === application.currentStage;
+                      const isRejected = application.status === 'Rejected' || application.status === 'Held';
+
+                      return (
+                        <div key={stage} className="flex-1 flex items-center gap-1">
+                          <div className={`h-1.5 rounded-full flex-1 transition-colors ${
+                            isRejected && isCurrent ? 'bg-destructive' :
+                            isCompleted ? 'bg-primary' :
+                            isCurrent ? 'bg-primary/50' :
+                            'bg-muted'
+                          }`} />
+                          {index < 4 && <div className="w-0.5 h-1.5 bg-muted" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* View Button */}
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => navigate(`/employee/applications/${application.applicationId}`)}
+                    >
+                      View Details
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

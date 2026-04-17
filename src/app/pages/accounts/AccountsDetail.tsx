@@ -130,14 +130,9 @@ export function AccountsDetail() {
   }
 
   const leaveType = getLeaveTypeById(application.leaveTypeId);
-  const employee = getUserById(application.employeeId);
-  const balance = getLeaveBalance(application.employeeId, application.leaveTypeId);
-  const days = calculateLeaveDays(
-    application.fromDate,
-    application.fromSession,
-    application.toDate,
-    application.toSession
-  );
+  const employee = getUserById(application.userId);
+  const balance = getLeaveBalance(application.userId, application.leaveTypeId);
+  const days = application.leaveDays;
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -192,7 +187,7 @@ export function AccountsDetail() {
         </div>
 
         <Tabs defaultValue="sap" className="space-y-4">
-          <TabsList>
+          <TabsList className="bg-muted">
             <TabsTrigger value="sap">SAP Posting Details</TabsTrigger>
             <TabsTrigger value="application">Application Details</TabsTrigger>
             <TabsTrigger value="financial">Financial Impact</TabsTrigger>
@@ -434,7 +429,7 @@ export function AccountsDetail() {
                   <div>
                     <div className="text-sm text-muted-foreground">Period</div>
                     <div className="font-medium">
-                      {formatDate(application.fromDate)} to {formatDate(application.toDate)}
+                      {formatDate(application.leaveFromDate)} to {formatDate(application.leaveToDate)}
                     </div>
                   </div>
                   <div>
@@ -515,7 +510,7 @@ export function AccountsDetail() {
                   <div className="p-4 bg-muted rounded-lg">
                     <div className="text-sm text-muted-foreground mb-2">Effective Month</div>
                     <div className="font-medium">
-                      {new Date(application.fromDate).toLocaleDateString('en-IN', {
+                      {new Date(application.leaveFromDate).toLocaleDateString('en-IN', {
                         month: 'long',
                         year: 'numeric',
                       })}
@@ -532,7 +527,7 @@ export function AccountsDetail() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
-                      <span>Adjust salary for {formatDate(application.fromDate)} to {formatDate(application.toDate)}</span>
+                      <span>Adjust salary for {formatDate(application.leaveFromDate)} to {formatDate(application.leaveToDate)}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />

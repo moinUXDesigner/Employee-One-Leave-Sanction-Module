@@ -212,15 +212,6 @@ export function Step5Eligibility({
               </AlertDescription>
             </Alert>
           )}
-
-          {leaveType?.minDaysNotice > 0 && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                {leaveType.minDaysNotice} days advance notice is required for this leave type
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
 
@@ -277,14 +268,15 @@ export function Step5Eligibility({
       </Card>
 
       {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={onBack}>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg flex justify-between gap-3 z-50">
+        <Button variant="outline" onClick={onBack} className="flex-1 sm:flex-none">
           Back
         </Button>
         <Button
           onClick={onNext}
           disabled={!isEligible}
           size="lg"
+          className="flex-1 sm:flex-none"
         >
           {isEligible ? 'Next: Review & Submit' : 'Cannot Proceed'}
         </Button>

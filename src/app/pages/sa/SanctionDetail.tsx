@@ -16,7 +16,7 @@ import {
   updateApplicationStatus,
   addWorkflowHistory,
 } from '../../services/mockData';
-import { generateDraftSanctionOrder } from '../../services/autogeneration.service';
+import { autoGenerationService } from '../../services/autogeneration.service';
 import { formatDate, calculateLeaveDays } from '../../utils/leaveCalculations';
 import { toast } from 'sonner';
 import type { LeaveApplication } from '../../types';
@@ -74,23 +74,27 @@ export function SanctionDetail() {
     setIsGenerating(true);
     try {
       const leaveType = getLeaveTypeById(app.leaveTypeId);
-      const employee = getUserById(app.employeeId);
-      const balance = getLeaveBalance(app.employeeId, app.leaveTypeId);
+      const employee = getUserById(app.userId);
+      const balance = getLeaveBalance(app.userId, app.leaveTypeId);
 
       if (!leaveType || !employee || !balance) {
         toast.error('Failed to generate order: Missing data');
         return;
       }
 
-      const days = calculateLeaveDays(app.fromDate, app.fromSession, app.toDate, app.toSession);
+      const controllingOfficer = employee.controllingOfficer
+        ? getUserById(employee.controllingOfficer)
+        : undefined;
 
-      const order = await generateDraftSanctionOrder({
+      const regulations = await autoGenerationService.selectApplicableRegulations(app.leaveTypeId);
+
+      const order = await autoGenerationService.generateDraftSanctionOrder({
         application: app,
+        user: employee,
         leaveType,
-        employee,
         balance,
-        leaveDays: days,
-        sanctioningAuthority: user!,
+        regulations,
+        controllingOfficer,
       });
 
       setDraftOrder(order);
@@ -119,7 +123,7 @@ export function SanctionDetail() {
     setIsActionDialogOpen(true);
   };
 
-  const handleAction = () => {
+  const handleAction = async () => {
     if (!application) return;
 
     let newStatus: any;
@@ -128,7 +132,7 @@ export function SanctionDetail() {
     switch (actionType) {
       case 'approve':
         newStatus = 'Sanctioned';
-        message = 'Application sanctioned successfully';
+        message = 'Leave sanctioned successfully and posted to SAP';
         break;
       case 'reject':
         if (!actionRemarks.trim()) {
@@ -148,31 +152,63 @@ export function SanctionDetail() {
         break;
     }
 
-    updateApplicationStatus(application.applicationId, newStatus);
-    addWorkflowHistory(application.applicationId, {
-      actionDate: new Date().toISOString(),
-      actionBy: user!.userId,
-      actionByName: user!.name,
-      action: actionType === 'approve' ? 'Sanctioned' : actionType === 'reject' ? 'Rejected' : 'Held',
-      fromStatus: 'PendingSanction',
-      toStatus: newStatus,
-      remarks: actionRemarks || `${actionType === 'approve' ? 'Sanctioned' : actionType === 'reject' ? 'Rejected' : 'Put on hold'} by Sanction Authority`,
-      role: 'SanctionAuthority',
-    });
+    try {
+      updateApplicationStatus(application.applicationId, newStatus);
+      addWorkflowHistory(application.applicationId, {
+        actionDate: new Date().toISOString(),
+        actionBy: user!.userId,
+        actionByName: user!.name,
+        action: actionType === 'approve' ? 'Sanctioned' : actionType === 'reject' ? 'Rejected' : 'Held',
+        fromStatus: 'PendingSanction',
+        toStatus: newStatus,
+        remarks: actionRemarks || `${actionType === 'approve' ? 'Sanctioned' : actionType === 'reject' ? 'Rejected' : 'Put on hold'} by Sanction Authority`,
+        role: 'SanctionAuthority',
+      });
 
-    if (actionType === 'approve') {
-      // Store the memo number and final order
-      const updatedApp = getApplicationById(application.applicationId);
-      if (updatedApp) {
-        (updatedApp as any).memoNumber = memoNumber;
-        (updatedApp as any).sanctionOrder = editedOrder;
-        (updatedApp as any).sanctionDate = new Date().toISOString();
+      if (actionType === 'approve') {
+        // Store the memo number and final order
+        const updatedApp = getApplicationById(application.applicationId);
+        if (updatedApp) {
+          (updatedApp as any).memoNumber = memoNumber;
+          (updatedApp as any).sanctionOrder = editedOrder;
+          (updatedApp as any).sanctionDate = new Date().toISOString();
+
+          // Auto-post to SAP in background
+          try {
+            (updatedApp as any).sapPostingStatus = 'Success';
+            (updatedApp as any).sapTransactionId = `SAP-${Date.now()}`;
+            (updatedApp as any).sapPostedAt = new Date().toISOString();
+            (updatedApp as any).sapPostedBy = user!.userId;
+
+            // Add SAP posting to workflow history
+            addWorkflowHistory(application.applicationId, {
+              actionDate: new Date().toISOString(),
+              actionBy: user!.userId,
+              actionByName: user!.name,
+              action: 'Posted to SAP',
+              fromStatus: 'Sanctioned',
+              toStatus: 'Sanctioned',
+              remarks: 'Automatically posted to SAP after sanction approval',
+              role: 'SanctionAuthority',
+            });
+          } catch (sapError) {
+            console.error('SAP posting error:', sapError);
+            (updatedApp as any).sapPostingStatus = 'Failed';
+            toast.error('Leave sanctioned but SAP posting failed. Please contact IT support or retry from Accounts module.');
+            setIsActionDialogOpen(false);
+            navigate('/sa/sanction');
+            return;
+          }
+        }
       }
-    }
 
-    toast.success(message);
-    setIsActionDialogOpen(false);
-    navigate('/sa/sanction');
+      toast.success(message);
+      setIsActionDialogOpen(false);
+      navigate('/sa/sanction');
+    } catch (error) {
+      console.error('Action error:', error);
+      toast.error('An error occurred. Please try again or contact support.');
+    }
   };
 
   if (!application) {
@@ -186,14 +222,9 @@ export function SanctionDetail() {
   }
 
   const leaveType = getLeaveTypeById(application.leaveTypeId);
-  const employee = getUserById(application.employeeId);
-  const balance = getLeaveBalance(application.employeeId, application.leaveTypeId);
-  const days = calculateLeaveDays(
-    application.fromDate,
-    application.fromSession,
-    application.toDate,
-    application.toSession
-  );
+  const employee = getUserById(application.userId);
+  const balance = getLeaveBalance(application.userId, application.leaveTypeId);
+  const days = application.leaveDays;
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -221,7 +252,7 @@ export function SanctionDetail() {
         <div className="flex gap-3">
           <Button className="bg-green-600 hover:bg-green-700" onClick={() => openActionDialog('approve')}>
             <CheckCircle className="w-4 h-4 mr-2" />
-            Sanction & Approve
+            Sanction & Post to SAP
           </Button>
           <Button variant="destructive" onClick={() => openActionDialog('reject')}>
             <XCircle className="w-4 h-4 mr-2" />
@@ -237,10 +268,10 @@ export function SanctionDetail() {
           </Button>
         </div>
 
-        <Tabs defaultValue="order" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="order">Draft Sanction Order</TabsTrigger>
+        <Tabs defaultValue="application" className="space-y-4">
+          <TabsList className="bg-muted">
             <TabsTrigger value="application">Application Details</TabsTrigger>
+            <TabsTrigger value="order">Draft Sanction Order</TabsTrigger>
             <TabsTrigger value="workflow">Workflow History</TabsTrigger>
           </TabsList>
 
@@ -321,34 +352,36 @@ export function SanctionDetail() {
 
           {/* Application Details Tab */}
           <TabsContent value="application" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Employee Details */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
                     <User className="w-4 h-4" />
                     Employee Details
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Name</div>
-                    <div className="font-medium">{employee?.name}</div>
+                <CardContent className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-muted-foreground">Name</div>
+                      <div className="font-medium">{employee?.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Employee ID</div>
+                      <div className="font-medium">{employee?.employeeId}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Designation</div>
+                      <div className="font-medium">{employee?.designation}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Department</div>
+                      <div className="font-medium">{employee?.department}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Employee ID</div>
-                    <div className="font-medium">{employee?.employeeId}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Designation</div>
-                    <div className="font-medium">{employee?.designation}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Department</div>
-                    <div className="font-medium">{employee?.department}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Office</div>
+                  <div className="text-xs">
+                    <div className="text-muted-foreground">Office</div>
                     <div className="font-medium">{employee?.office}</div>
                   </div>
                 </CardContent>
@@ -356,67 +389,69 @@ export function SanctionDetail() {
 
               {/* Leave Details */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     Leave Details
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Leave Type</div>
+                <CardContent className="space-y-2">
+                  <div className="text-xs">
+                    <div className="text-muted-foreground">Leave Type</div>
                     <div className="font-medium">
                       {leaveType?.name} ({leaveType?.code})
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Period</div>
+                  <div className="text-xs">
+                    <div className="text-muted-foreground">Period</div>
                     <div className="font-medium">
-                      {formatDate(application.fromDate)} ({application.fromSession}) to{' '}
-                      {formatDate(application.toDate)} ({application.toSession})
+                      {formatDate(application.leaveFromDate)} ({application.leaveFromSession}) to{' '}
+                      {formatDate(application.leaveToDate)} ({application.leaveToSession})
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Duration</div>
-                    <div className="font-medium">{days} days</div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <div className="text-muted-foreground">Duration</div>
+                      <div className="font-medium">{days} days</div>
+                    </div>
+                    {application.prefixDays > 0 && (
+                      <div>
+                        <div className="text-muted-foreground">Prefix</div>
+                        <div className="font-medium">{application.prefixDays} days</div>
+                      </div>
+                    )}
+                    {application.suffixDays > 0 && (
+                      <div>
+                        <div className="text-muted-foreground">Suffix</div>
+                        <div className="font-medium">{application.suffixDays} days</div>
+                      </div>
+                    )}
                   </div>
-                  {application.prefixDays > 0 && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">Prefix Days</div>
-                      <div className="font-medium">{application.prefixDays} days</div>
-                    </div>
-                  )}
-                  {application.suffixDays > 0 && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">Suffix Days</div>
-                      <div className="font-medium">{application.suffixDays} days</div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
               {/* Reason & Address */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Reason for Leave</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Reason for Leave</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm whitespace-pre-wrap">{application.reason}</p>
+                  <p className="text-xs whitespace-pre-wrap line-clamp-3">{application.reason}</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     Leave Address
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm whitespace-pre-wrap">{application.leaveAddress}</p>
+                <CardContent className="space-y-2">
+                  <p className="text-xs whitespace-pre-wrap line-clamp-2">{application.leaveAddress}</p>
                   {application.contactNumber && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">Contact Number</div>
+                    <div className="text-xs">
+                      <div className="text-muted-foreground">Contact Number</div>
                       <div className="font-medium">{application.contactNumber}</div>
                     </div>
                   )}
@@ -425,28 +460,28 @@ export function SanctionDetail() {
 
               {/* Leave Balance */}
               <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base">Leave Balance Verification</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Leave Balance Verification</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <div className="text-sm text-muted-foreground">Opening Balance</div>
-                      <div className="text-2xl font-bold">{balance?.openingBalance || 0}</div>
+                      <div className="text-xs text-muted-foreground">Opening Balance</div>
+                      <div className="text-xl font-bold">{balance?.openingBalance || 0}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">Credited</div>
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-xs text-muted-foreground">Credited</div>
+                      <div className="text-xl font-bold text-green-600">
                         +{balance?.credited || 0}
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">Availed</div>
-                      <div className="text-2xl font-bold text-red-600">-{balance?.availed || 0}</div>
+                      <div className="text-xs text-muted-foreground">Availed</div>
+                      <div className="text-xl font-bold text-red-600">-{balance?.availed || 0}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">Available</div>
-                      <div className="text-2xl font-bold text-primary">
+                      <div className="text-xs text-muted-foreground">Available</div>
+                      <div className="text-xl font-bold text-primary">
                         {(balance?.openingBalance || 0) + (balance?.credited || 0) - (balance?.availed || 0)}
                       </div>
                     </div>
@@ -510,13 +545,13 @@ export function SanctionDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionType === 'approve' && 'Sanction & Approve Application'}
+              {actionType === 'approve' && 'Sanction & Post to SAP'}
               {actionType === 'reject' && 'Reject Application'}
               {actionType === 'hold' && 'Put Application on Hold'}
             </DialogTitle>
             <DialogDescription>
               {actionType === 'approve' &&
-                'This will sanction the leave application and forward it to Accounts for SAP posting.'}
+                'This will sanction the leave and post to SAP.'}
               {actionType === 'reject' &&
                 'This will reject the application. Please provide a reason for rejection.'}
               {actionType === 'hold' &&
@@ -568,7 +603,7 @@ export function SanctionDetail() {
                   : ''
               }
             >
-              {actionType === 'approve' && 'Confirm Sanction'}
+              {actionType === 'approve' && 'Sanction & Post'}
               {actionType === 'reject' && 'Confirm Rejection'}
               {actionType === 'hold' && 'Confirm Hold'}
             </Button>

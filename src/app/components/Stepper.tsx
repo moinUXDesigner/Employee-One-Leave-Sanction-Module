@@ -55,7 +55,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                 >
                   <div
                     className={cn(
-                      'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all',
+                      'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all',
                       isCompleted &&
                         'bg-primary border-primary text-primary-foreground',
                       isCurrent &&
@@ -66,15 +66,15 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                     )}
                   >
                     {isCompleted ? (
-                      <Check className="w-5 h-5" />
+                      <Check className="w-4 h-4" />
                     ) : (
-                      <span className="text-sm font-medium">{index + 1}</span>
+                      <span className="text-xs font-medium">{index + 1}</span>
                     )}
                   </div>
-                  <div className="mt-2 text-center">
+                  <div className="mt-1.5 text-center">
                     <div
                       className={cn(
-                        'text-sm font-medium',
+                        'text-xs font-medium',
                         isCurrent && 'text-primary',
                         isCompleted && 'text-foreground',
                         !isCompleted &&
@@ -84,21 +84,16 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                     >
                       {step.title}
                     </div>
-                    {step.description && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {step.description}
-                      </div>
-                    )}
                   </div>
                 </button>
 
                 {/* Connector line */}
                 {index < steps.length - 1 && (
-                  <div className="flex-1 h-0.5 mx-2 mb-8">
+                  <div className="flex-1 h-[2px] mx-3 mb-6">
                     <div
                       className={cn(
                         'h-full transition-all',
-                        index < currentStep ? 'bg-primary' : 'bg-muted'
+                        index < currentStep ? 'bg-primary' : 'bg-border'
                       )}
                     />
                   </div>

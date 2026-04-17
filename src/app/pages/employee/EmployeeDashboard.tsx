@@ -186,14 +186,24 @@ export function EmployeeDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/employee/apply')}>
             <CardHeader>
-              <CardTitle className="text-lg">Apply for Leave</CardTitle>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Apply for Leave</CardTitle>
+              </div>
               <CardDescription>Submit a new leave application</CardDescription>
             </CardHeader>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/employee/applications')}>
             <CardHeader>
-              <CardTitle className="text-lg">My Applications</CardTitle>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-lg">My Applications</CardTitle>
+              </div>
               <CardDescription>View and track your leave applications</CardDescription>
             </CardHeader>
           </Card>

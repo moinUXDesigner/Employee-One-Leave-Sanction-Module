@@ -4,6 +4,8 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardRouter } from './pages/DashboardRouter';
 import { ApplyLeavePage } from './pages/employee/ApplyLeavePage';
 import { MyApplicationsPage } from './pages/employee/MyApplicationsPage';
+import { LeaveAccountPage } from './pages/employee/LeaveAccountPage';
+import { ApplicationDetailPage } from './pages/employee/ApplicationDetailPage';
 import { COReviewInbox } from './pages/co/COReviewInbox';
 import { COReviewDetail } from './pages/co/COReviewDetail';
 import { HRVerificationQueue } from './pages/hr/HRVerificationQueue';
@@ -20,6 +22,7 @@ import { SanctionDetail } from './pages/sa/SanctionDetail';
 import { AccountsQueue } from './pages/accounts/AccountsQueue';
 import { AccountsDetail } from './pages/accounts/AccountsDetail';
 import { Toaster } from './components/ui/sonner';
+import { Sidebar } from './components/Sidebar';
 
 // Simple client-side router for Figma Make environment
 function AppContent() {
@@ -88,10 +91,20 @@ function AppContent() {
         return <ApplyLeavePage />;
       case '/employee/applications':
         return <MyApplicationsPage />;
+      case '/employee/leave-account':
+        return <LeaveAccountPage />;
+      case '/co/dashboard':
+        return <DashboardRouter />;
       case '/co/review':
         return <COReviewInbox />;
+      case '/hr/dashboard':
+        return <DashboardRouter />;
       case '/hr/verify':
         return <HRVerificationQueue />;
+      case '/sa/dashboard':
+        return <DashboardRouter />;
+      case '/accounts/dashboard':
+        return <DashboardRouter />;
       case '/admin/dashboard':
         return <AdminDashboard />;
       case '/admin/delegation':
@@ -119,7 +132,7 @@ function AppContent() {
           return <HRVerificationDetail />;
         }
         if (currentPath.startsWith('/employee/applications/')) {
-          return <MyApplicationsPage />;
+          return <ApplicationDetailPage />;
         }
         if (currentPath.startsWith('/sa/sanction/')) {
           return <SanctionDetail />;
@@ -134,7 +147,16 @@ function AppContent() {
 
   return (
     <>
-      {renderRoute()}
+      {isAuthenticated ? (
+        <div className="flex">
+          <Sidebar />
+          <main className="flex-1 lg:ml-64">
+            {renderRoute()}
+          </main>
+        </div>
+      ) : (
+        renderRoute()
+      )}
       <Toaster />
     </>
   );

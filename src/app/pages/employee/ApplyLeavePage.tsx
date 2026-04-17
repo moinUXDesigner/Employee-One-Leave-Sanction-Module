@@ -112,8 +112,8 @@ export function ApplyLeavePage() {
       </div>
 
       {/* Stepper */}
-      <div className="bg-background border-b">
-        <div className="container mx-auto px-4">
+      <div className="sticky top-0 z-40 bg-background border-b shadow-sm">
+        <div className="overflow-x-auto px-2 sm:px-4">
           <Stepper
             steps={STEPS}
             currentStep={currentStep}

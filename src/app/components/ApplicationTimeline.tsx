@@ -80,7 +80,7 @@ export function ApplicationTimeline({ workflowHistory, currentStatus }: Applicat
   return (
     <div className="relative">
       {/* Timeline line */}
-      <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent" />
+      <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-primary/20" />
 
       {/* Timeline items */}
       <div className="space-y-6">
